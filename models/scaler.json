@@ -1,0 +1,50 @@
+{
+  "mean": {
+    "day_of_week": 2.521340814847929,
+    "month": 6.03760231844738,
+    "year": 2013.865930847374,
+    "is_weekend": 0.17522313514513418,
+    "lag_7": 6954.398999552959,
+    "lag_14": 6957.174181067041,
+    "lag_30": 6930.275200012332,
+    "rolling_mean_7": 6959.642341614156,
+    "rolling_mean_30": 6948.6758208344,
+    "promo": 0.44819564982812043,
+    "promo2": 0.4912950316782538,
+    "school_holiday": 0.19591342818825053,
+    "state_holiday_encoded": 0.0014397804874288973,
+    "competition_distance": 5717.477316520479
+  },
+  "scale": {
+    "day_of_week": 1.7243959594329994,
+    "month": 3.2473746525005187,
+    "year": 0.7743436248182782,
+    "is_weekend": 0.3801578462345756,
+    "lag_7": 2999.3504855042956,
+    "lag_14": 3000.6799687853973,
+    "lag_30": 2995.0205577976635,
+    "rolling_mean_7": 2557.169912407546,
+    "rolling_mean_30": 2418.2036297402433,
+    "promo": 0.49730906818917386,
+    "promo2": 0.49992421778668883,
+    "school_holiday": 0.3969022006053557,
+    "state_holiday_encoded": 0.0483205200996553,
+    "competition_distance": 8127.957090847125
+  },
+  "feature_order": [
+    "day_of_week",
+    "month",
+    "year",
+    "is_weekend",
+    "lag_7",
+    "lag_14",
+    "lag_30",
+    "rolling_mean_7",
+    "rolling_mean_30",
+    "promo",
+    "promo2",
+    "school_holiday",
+    "state_holiday_encoded",
+    "competition_distance"
+  ]
+}

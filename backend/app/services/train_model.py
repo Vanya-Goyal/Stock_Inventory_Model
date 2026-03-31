@@ -7,7 +7,7 @@ Run:
     python -m app.services.train_model
 """
 
-import joblib
+import json
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -22,8 +22,8 @@ from app.utils.feature_engineering import engineer_features, get_feature_matrix,
 MODELS_DIR = Path(__file__).resolve().parents[3] / "models"
 MODELS_DIR.mkdir(exist_ok=True)
 
-MODEL_PATH = MODELS_DIR / "linear_regression.joblib"
-SCALER_PATH = MODELS_DIR / "scaler.joblib"
+MODEL_PATH  = MODELS_DIR / "linear_regression.json"
+SCALER_PATH = MODELS_DIR / "scaler.json"
 
 
 # ── Metrics ──────────────────────────────────────────────────────────────────
@@ -73,9 +73,20 @@ def train():
     metrics = evaluate(y_test, y_pred)
     print(f"[Evaluation] {metrics}")
 
-    # Persist
-    joblib.dump(model, MODEL_PATH)
-    joblib.dump(scaler, SCALER_PATH)
+    # Persist as human-readable JSON
+    model_data = {
+        "intercept": float(model.intercept_),
+        "coefficients": dict(zip(FEATURE_COLUMNS, model.coef_.tolist())),
+        "feature_order": FEATURE_COLUMNS,
+        "metrics": metrics,
+    }
+    scaler_data = {
+        "mean": dict(zip(FEATURE_COLUMNS, scaler.mean_.tolist())),
+        "scale": dict(zip(FEATURE_COLUMNS, scaler.scale_.tolist())),
+        "feature_order": FEATURE_COLUMNS,
+    }
+    MODEL_PATH.write_text(json.dumps(model_data, indent=2))
+    SCALER_PATH.write_text(json.dumps(scaler_data, indent=2))
     print(f"Model saved -> {MODEL_PATH}")
     print(f"Scaler saved -> {SCALER_PATH}")
 
@@ -84,27 +95,33 @@ def train():
 
 # ── Prediction Helper ─────────────────────────────────────────────────────────
 
-def load_model():
-    """Load saved model and scaler from disk."""
-    model = joblib.load(MODEL_PATH)
-    scaler = joblib.load(SCALER_PATH)
-    return model, scaler
+def load_model() -> tuple[dict, dict]:
+    """Load model and scaler from JSON files."""
+    if not MODEL_PATH.exists():
+        raise FileNotFoundError(f"Model not found at {MODEL_PATH}")
+    model_data  = json.loads(MODEL_PATH.read_text())
+    scaler_data = json.loads(SCALER_PATH.read_text())
+    return model_data, scaler_data
 
 
 def predict(features: dict) -> float:
     """
     Predict sales demand from a feature dictionary.
-
-    Args:
-        features: dict with keys matching FEATURE_COLUMNS
-
-    Returns:
-        Predicted sales as a float (clipped to >= 0)
+    Manually applies StandardScaler then Linear Regression using JSON weights.
     """
-    model, scaler = load_model()
-    row = np.array([[features[col] for col in FEATURE_COLUMNS]])
-    row_scaled = scaler.transform(row)
-    prediction = model.predict(row_scaled)[0]
+    model_data, scaler_data = load_model()
+
+    # Scale: z = (x - mean) / scale
+    scaled = [
+        (features[col] - scaler_data["mean"][col]) / scaler_data["scale"][col]
+        for col in FEATURE_COLUMNS
+    ]
+
+    # Predict: y = intercept + sum(coef * scaled_feature)
+    prediction = model_data["intercept"] + sum(
+        model_data["coefficients"][col] * val
+        for col, val in zip(FEATURE_COLUMNS, scaled)
+    )
     return max(0.0, float(prediction))
 
 

@@ -1,0 +1,40 @@
+{
+  "intercept": 6964.917505511211,
+  "coefficients": {
+    "day_of_week": -385.95267866008817,
+    "month": 179.0650138276512,
+    "year": -24.383170694337245,
+    "is_weekend": 210.73780895554228,
+    "lag_7": -219.5072461561147,
+    "lag_14": -296.05216898310886,
+    "lag_30": -232.47531330928928,
+    "rolling_mean_7": 49.64131430597344,
+    "rolling_mean_30": 2917.9830910584824,
+    "promo": 1069.4244080219548,
+    "promo2": -0.7700705764316855,
+    "school_holiday": 19.663811185455955,
+    "state_holiday_encoded": -0.5224409602465587,
+    "competition_distance": 7.231534284951369
+  },
+  "feature_order": [
+    "day_of_week",
+    "month",
+    "year",
+    "is_weekend",
+    "lag_7",
+    "lag_14",
+    "lag_30",
+    "rolling_mean_7",
+    "rolling_mean_30",
+    "promo",
+    "promo2",
+    "school_holiday",
+    "state_holiday_encoded",
+    "competition_distance"
+  ],
+  "metrics": {
+    "MAE": 1038.22,
+    "RMSE": 1424.29,
+    "MAPE": 16.48
+  }
+}

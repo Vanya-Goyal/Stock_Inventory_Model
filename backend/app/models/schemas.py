@@ -61,3 +61,39 @@ class InsightRequest(BaseModel):
 class InsightResponse(BaseModel):
     insights: list[str]
     retrieved_context: list[str]
+
+
+class DashboardResponse(BaseModel):
+    avg_sales: float
+    total_stores: int
+    promo_lift_pct: float
+    low_stock_alert_count: int
+    weekly_trend: list[dict]
+    monthly_trend: list[dict]
+
+
+class StoreStatsResponse(BaseModel):
+    top_stores: list[dict]
+    bottom_stores: list[dict]
+    by_store_type: list[dict]
+    total_stores: int
+    best_store: int
+    worst_store: int
+
+
+class PromoStatsResponse(BaseModel):
+    promo_comparison: list[dict]
+    promo_by_day: list[dict]
+    holiday_avg_sales: list[dict]
+    promo1_lift_pct: float
+    promo2_lift_pct: float
+    both_lift_pct: float
+
+
+class AlertItem(BaseModel):
+    store: str
+    type: str
+    message: str
+    severity: str
+    recent_avg: float
+    historical_avg: float

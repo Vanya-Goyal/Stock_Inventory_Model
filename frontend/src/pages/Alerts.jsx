@@ -1,56 +1,78 @@
-const ALERTS = [
-  { id: 1, store: "Store 42",  type: "LOW_STOCK",  message: "Stock at 35% of predicted demand. Restock urgently.", severity: "danger",  time: "2 min ago" },
-  { id: 2, store: "Store 117", type: "LOW_STOCK",  message: "Stock at 62% of predicted demand. Plan restock.", severity: "warning", time: "15 min ago" },
-  { id: 3, store: "Store 8",   type: "ANOMALY",    message: "Sales 3.2σ above forecast — possible data error or flash sale.", severity: "warning", time: "1 hr ago" },
-  { id: 4, store: "Store 201", type: "OVERSTOCK",  message: "Stock at 210% of demand. Consider markdown promotions.", severity: "info",    time: "3 hr ago" },
-  { id: 5, store: "Store 55",  type: "LOW_STOCK",  message: "Stock at 28% of predicted demand. Critical shortage.", severity: "danger",  time: "5 hr ago" },
-  { id: 6, store: "Store 330", type: "ANOMALY",    message: "Sales dropped 45% vs 7-day average. Investigate.", severity: "danger",  time: "6 hr ago" },
-];
+import { useState, useEffect } from "react";
+import { getAlerts } from "../services/api";
 
 const severityLabel = { danger: "CRITICAL", warning: "WARNING", info: "INFO" };
-const typeIcon = { LOW_STOCK: "📦", ANOMALY: "⚠️", OVERSTOCK: "🏪" };
+const typeIcon      = { LOW_STOCK: "📦", ANOMALY: "⚠️", OVERSTOCK: "🏪" };
 
 export default function Alerts() {
-  const critical = ALERTS.filter((a) => a.severity === "danger").length;
-  const warnings = ALERTS.filter((a) => a.severity === "warning").length;
+  const [alerts, setAlerts]   = useState([]);
+  const [loading, setLoading]  = useState(true);
+  const [error, setError]      = useState("");
+
+  useEffect(() => {
+    getAlerts()
+      .then((d) => { setAlerts(d); setLoading(false); })
+      .catch((e) => { setError(e.message); setLoading(false); });
+  }, []);
+
+  if (loading) return <div style={{ color: "var(--muted)", padding: 40 }}>Analysing store data for alerts...</div>;
+  if (error)   return <div className="alert alert-danger">{error}</div>;
+
+  const critical = alerts.filter((a) => a.severity === "danger").length;
+  const warnings = alerts.filter((a) => a.severity === "warning").length;
+  const healthy  = 1115 - critical - warnings;
 
   return (
     <div>
       <h1 className="page-title">Alerts</h1>
+      <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginBottom: 20 }}>
+        Derived from real sales data — stores where recent 7-day avg dropped &gt;20% vs historical average.
+      </p>
 
       <div className="kpi-grid">
         <div className="kpi-card danger">
           <div className="kpi-label">Critical Alerts</div>
           <div className="kpi-value">{critical}</div>
+          <div className="kpi-sub">Sales dropped &gt;40%</div>
         </div>
         <div className="kpi-card warning">
           <div className="kpi-label">Warnings</div>
           <div className="kpi-value">{warnings}</div>
+          <div className="kpi-sub">Sales dropped 20–40%</div>
         </div>
         <div className="kpi-card success">
           <div className="kpi-label">Healthy Stores</div>
-          <div className="kpi-value">1,097</div>
+          <div className="kpi-value">{healthy > 0 ? healthy.toLocaleString() : "—"}</div>
         </div>
       </div>
 
       <div className="card">
-        <div className="section-title">Active Alerts</div>
-        {ALERTS.map((alert) => (
-          <div key={alert.id} className={`alert alert-${alert.severity}`}
+        <div className="section-title">Active Alerts ({alerts.length})</div>
+
+        {alerts.length === 0 && (
+          <div className="alert alert-success">No alerts — all stores are performing normally.</div>
+        )}
+
+        {alerts.map((alert, i) => (
+          <div key={i} className={`alert alert-${alert.severity}`}
             style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}
           >
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                <span>{typeIcon[alert.type]}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <span>{typeIcon[alert.type] || "🔔"}</span>
                 <strong>{alert.store}</strong>
                 <span className={`badge badge-${alert.severity}`}>{severityLabel[alert.severity]}</span>
-                <span className={`badge badge-info`}>{alert.type.replace("_", " ")}</span>
+                <span className="badge badge-info">{alert.type.replace("_", " ")}</span>
               </div>
-              <div style={{ fontSize: "0.88rem", color: "var(--muted)" }}>{alert.message}</div>
+              <div style={{ fontSize: "0.88rem", color: "var(--muted)", marginBottom: 4 }}>
+                {alert.message}
+              </div>
+              <div style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
+                Recent avg: <strong style={{ color: "var(--text)" }}>{alert.recent_avg.toLocaleString()}</strong>
+                &nbsp;|&nbsp;
+                Historical avg: <strong style={{ color: "var(--text)" }}>{alert.historical_avg.toLocaleString()}</strong>
+              </div>
             </div>
-            <span style={{ fontSize: "0.78rem", color: "var(--muted)", whiteSpace: "nowrap", marginLeft: 16 }}>
-              {alert.time}
-            </span>
           </div>
         ))}
       </div>

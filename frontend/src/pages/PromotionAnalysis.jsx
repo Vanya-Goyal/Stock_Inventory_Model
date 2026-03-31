@@ -1,52 +1,54 @@
+import { useState, useEffect } from "react";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, Legend
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Legend,
+  LineChart, Line,
 } from "recharts";
-
-const PROMO_IMPACT = [
-  { name: "No Promo",  avg_sales: 4800 },
-  { name: "Promo1",   avg_sales: 6900 },
-  { name: "Promo2",   avg_sales: 5600 },
-  { name: "Both",     avg_sales: 8200 },
-];
-
-const HOLIDAY_DATA = [
-  { name: "Regular Day",    value: 58 },
-  { name: "School Holiday", value: 18 },
-  { name: "Public Holiday", value: 14 },
-  { name: "Christmas",      value: 10 },
-];
-
-const COLORS = ["#6366f1", "#22d3ee", "#f59e0b", "#22c55e"];
+import { getPromoStats } from "../services/api";
 
 export default function PromotionAnalysis() {
+  const [data, setData]       = useState(null);
+  const [loading, setLoading]  = useState(true);
+  const [error, setError]      = useState("");
+
+  useEffect(() => {
+    getPromoStats()
+      .then((d) => { setData(d); setLoading(false); })
+      .catch((e) => { setError(e.message); setLoading(false); });
+  }, []);
+
+  if (loading) return <div style={{ color: "var(--muted)", padding: 40 }}>Loading promotion data from CSV...</div>;
+  if (error)   return <div className="alert alert-danger">{error}</div>;
+
   return (
     <div>
       <h1 className="page-title">Promotion Analysis</h1>
 
+      {/* Real lift KPIs from CSV */}
       <div className="kpi-grid">
         <div className="kpi-card success">
           <div className="kpi-label">Promo1 Lift</div>
-          <div className="kpi-value">+43.8%</div>
+          <div className="kpi-value">+{data.promo1_lift_pct}%</div>
           <div className="kpi-sub">vs no promotion</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Promo2 Lift</div>
-          <div className="kpi-value">+16.7%</div>
+          <div className="kpi-value">+{data.promo2_lift_pct}%</div>
           <div className="kpi-sub">vs no promotion</div>
         </div>
         <div className="kpi-card warning">
           <div className="kpi-label">Combined Lift</div>
-          <div className="kpi-value">+70.8%</div>
+          <div className="kpi-value">+{data.both_lift_pct}%</div>
           <div className="kpi-sub">Promo1 + Promo2</div>
         </div>
       </div>
 
       <div className="grid-2">
+        {/* Promo comparison bar chart */}
         <div className="card">
           <div className="section-title">Avg Sales by Promotion Type</div>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={PROMO_IMPACT}>
+            <BarChart data={data.promo_comparison}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
               <XAxis dataKey="name" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
@@ -56,23 +58,35 @@ export default function PromotionAnalysis() {
           </ResponsiveContainer>
         </div>
 
+        {/* Holiday avg sales */}
         <div className="card">
-          <div className="section-title">Sales Day Distribution</div>
+          <div className="section-title">Avg Sales by Holiday Type</div>
           <ResponsiveContainer width="100%" height={280}>
-            <PieChart>
-              <Pie data={HOLIDAY_DATA} cx="50%" cy="50%" outerRadius={100}
-                dataKey="value" label={({ name, value }) => `${name}: ${value}%`}
-                labelLine={false}
-              >
-                {HOLIDAY_DATA.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Legend />
+            <BarChart data={data.holiday_avg_sales}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+              <XAxis dataKey="name" stroke="#94a3b8" tick={{ fontSize: 11 }} />
+              <YAxis stroke="#94a3b8" />
               <Tooltip contentStyle={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 8 }} />
-            </PieChart>
+              <Bar dataKey="value" fill="#22d3ee" radius={[4,4,0,0]} name="Avg Sales" />
+            </BarChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* Promo vs No-Promo by day of week */}
+      <div className="card" style={{ marginTop: 20 }}>
+        <div className="section-title">Promo vs No-Promo Sales by Day of Week</div>
+        <ResponsiveContainer width="100%" height={280}>
+          <LineChart data={data.promo_by_day}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+            <XAxis dataKey="day" stroke="#94a3b8" />
+            <YAxis stroke="#94a3b8" />
+            <Tooltip contentStyle={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 8 }} />
+            <Legend />
+            <Line type="monotone" dataKey="promo"    stroke="#6366f1" strokeWidth={2} name="With Promo" />
+            <Line type="monotone" dataKey="no_promo" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" name="No Promo" />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

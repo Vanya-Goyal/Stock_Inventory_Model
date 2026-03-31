@@ -7,10 +7,16 @@ from app.models.schemas import (
     PredictRequest, PredictResponse,
     RecommendRequest, RecommendResponse,
     InsightRequest, InsightResponse,
+    DashboardResponse, StoreStatsResponse,
+    PromoStatsResponse, AlertItem,
 )
 from app.services.train_model import predict
 from app.services.recommendation import recommend_action
 from app.services.rag_service import generate_insights
+from app.services.analytics import (
+    get_dashboard_stats, get_store_stats,
+    get_promo_stats, get_alerts,
+)
 
 router = APIRouter()
 
@@ -44,3 +50,39 @@ def get_ai_insights(request: InsightRequest):
     features = request.model_dump()
     result = generate_insights(features, request.predicted_sales)
     return InsightResponse(**result)
+
+
+@router.get("/dashboard", response_model=DashboardResponse)
+def dashboard_stats():
+    """Real aggregated KPIs and trends from train.csv."""
+    try:
+        return get_dashboard_stats()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/store-stats", response_model=StoreStatsResponse)
+def store_stats():
+    """Real per-store sales stats from train.csv."""
+    try:
+        return get_store_stats()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/promo-stats", response_model=PromoStatsResponse)
+def promo_stats():
+    """Real promotion impact analysis from train.csv."""
+    try:
+        return get_promo_stats()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/alerts", response_model=list[AlertItem])
+def alerts():
+    """Real low-stock and anomaly alerts derived from train.csv."""
+    try:
+        return get_alerts()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
